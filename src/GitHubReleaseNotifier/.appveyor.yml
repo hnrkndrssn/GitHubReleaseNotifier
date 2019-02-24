@@ -1,0 +1,54 @@
+﻿image: Visual Studio 2017
+configuration: Release
+
+init:
+  - git config --global core.autocrlf true
+
+install:
+  - choco install gitversion.portable -pre -y
+
+assembly_info:
+  patch: false
+
+before_build:
+  - ps: gitversion /l console /output buildserver /updateAssemblyInfo
+  - ps: Update-AppveyorBuild -Version "$env:GitVersion_FullSemVer"
+  - cmd: dotnet --version
+  - cmd: dotnet restore src/GitHubReleaseNotifier.sln
+
+build:
+  project: src/GitHubReleaseNotifier.sln
+  verbosity: minimal
+
+after_build:
+  - cmd: dotnet publish src/GitHubReleaseNotifier.sln -o ../../publish
+
+artifacts:
+  - path: 'publish'
+    name: 'GitHubReleaseNotifier.Functions.$(appveyor_build_version)'
+    type: zip
+
+deploy:
+  - provider: GitHub
+    release: $(appveyor_build_version)
+    artifact: /.*\.zip/
+    auth_token:
+      secure: RKJcL2Cdv/b3iiKoxADcLMf/dmoi9UGn6EkgpKUQkyitgwHDG7aVp26TUmuzwYdt
+    draft: false
+    prerelease: false
+    on:
+      branch: master
+      appveyor_repo_tag: true
+
+  - provider: Octopus
+    push_packages: true
+    create_release: true
+    deploy_release: false
+    server: ""
+    api_key:
+      secure: 
+    artifact: /.*\.zip/
+    project: 'Functions App'
+    on:
+      branch: master
+      appveyor_repo_tag: true
