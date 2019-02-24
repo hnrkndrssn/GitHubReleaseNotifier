@@ -24,8 +24,8 @@ namespace GitHubReleaseNotifier
             [Table(Constants.Repositories.TableName)] CloudTable table,
             ILogger log)
         {
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            var github = new GitHubClient(new ProductHeaderValue($"{typeof(NewReleaseCheck).GetType().Namespace}", $"{version.Major}.{version.Minor}.{version.Build}"));
+            var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            var github = new GitHubClient(new ProductHeaderValue($"{typeof(NewReleaseCheck).GetType().Namespace}", version));
 
             TableContinuationToken token = null;
             var repositoriesToCheck = new List<RepositoryEntity>();
